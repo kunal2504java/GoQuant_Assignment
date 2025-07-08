@@ -1,3 +1,9 @@
 fastapi
 uvicorn[standard]
 requests
+pandas
+numpy
+arch
+statsmodels
+transformers
+torch
