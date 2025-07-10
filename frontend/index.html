@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Protocol Upgrade Monitor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .chart-container {
+            position: relative;
+            height: 120px;
+            width: 100%;
+        }
+        .loader {
+            border-top-color: #4f46e5;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-200">
+
+    <div class="flex flex-col lg:flex-row min-h-screen">
+
+        <!-- Left Panel: Monitoring Dashboard -->
+        <aside class="w-full lg:w-1/4 bg-gray-900/80 backdrop-blur-sm border-r border-gray-700/50 p-6 space-y-6 overflow-y-auto scrollbar-hide">
+            <div class="flex items-center space-x-3">
+                <svg class="w-8 h-8 text-indigo-400" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                <h1 class="text-2xl font-bold">Protocol Monitor</h1>
+            </div>
+
+            <!-- Input Parameters -->
+            <div>
+                <h2 class="text-lg font-semibold text-gray-300 mb-4">Input Parameters</h2>
+                <div class="space-y-4">
+                    
+                    <!-- Functional Inputs -->
+                    <div>
+                        <label for="protocol-slug" class="block text-sm font-medium text-gray-400">Protocol (DeFi Llama Slug)</label>
+                        <input type="text" id="protocol-slug" class="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-white" value="uniswap">
+                    </div>
+                    <div>
+                        <label for="governance-space" class="block text-sm font-medium text-gray-400">Governance (Snapshot Space ID)</label>
+                        <input type="text" id="governance-space" class="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-white" value="uniswapgovernance.eth">
+                    </div>
+                    <div>
+                        <label for="token-id" class="block text-sm font-medium text-gray-400">Token (CoinGecko ID)</label>
+                        <input type="text" id="token-id" class="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-white" value="uniswap">
+                    </div>
+                    
+                    <hr class="border-gray-700">
+
+                    <!-- Added UI Components from Assignment -->
+                    <div>
+                        <label for="network" class="block text-sm font-medium text-gray-400">Network Selection</label>
+                        <select id="network" class="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-white">
+                            <option>Ethereum</option>
+                            <option selected>Polygon</option>
+                            <option>Arbitrum</option>
+                            <option>Optimism</option>
+                            <option>Bitcoin</option>
+                        </select>
+                    </div>
+                     <div>
+                        <label for="protocol-address" class="block text-sm font-medium text-gray-400">Protocol Addresses (Optional)</label>
+                        <input type="text" id="protocol-address" class="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-white" placeholder="e.g., 0x7a250d56...">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400">Upgrade Types</label>
+                        <div class="mt-2 space-y-2">
+                            <label class="inline-flex items-center">
+                                <input type="checkbox" class="form-checkbox h-5 w-5 bg-gray-800 border-gray-600 rounded text-indigo-600 focus:ring-indigo-500" checked>
+                                <span class="ml-2 text-sm">Governance</span>
+                            </label>
+                            <label class="inline-flex items-center">
+                                <input type="checkbox" class="form-checkbox h-5 w-5 bg-gray-800 border-gray-600 rounded text-indigo-600 focus:ring-indigo-500">
+                                <span class="ml-2 text-sm">Implementation</span>
+                            </label>
+                            <label class="inline-flex items-center">
+                                <input type="checkbox" class="form-checkbox h-5 w-5 bg-gray-800 border-gray-600 rounded text-indigo-600 focus:ring-indigo-500">
+                                <span class="ml-2 text-sm">Parameters</span>
+                            </label>
+                        </div>
+                    </div>
+                     <div>
+                        <label for="risk-threshold" class="block text-sm font-medium text-gray-400">Volatility Tolerance</label>
+                        <input type="range" id="risk-threshold" min="0" max="100" value="60" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer mt-2">
+                        <div class="text-right text-xs text-gray-500">60%</div>
+                    </div>
+                    <div>
+                        <label for="time-horizon" class="block text-sm font-medium text-gray-400">Time Horizon</label>
+                        <select id="time-horizon" class="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-white">
+                            <option>Short-term (1-7 days)</option>
+                            <option selected>Medium-term (1-4 weeks)</option>
+                            <option>Long-term (1-6 months)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="asset-pairs" class="block text-sm font-medium text-gray-400">Asset Pairs (Optional)</label>
+                        <input type="text" id="asset-pairs" class="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-white" placeholder="e.g., UNI/ETH">
+                    </div>
+                </div>
+            </div>
+
+            <button id="monitor-button" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 flex items-center justify-center space-x-2">
+                <span id="button-text">Start Monitoring</span>
+                <div id="loader" class="loader h-5 w-5 rounded-full border-2 border-t-2 border-gray-200 hidden"></div>
+            </button>
+            <div id="error-message" class="text-red-400 text-sm mt-2 text-center"></div>
+        </aside>
+
+        <!-- Center Panel: Protocol Upgrade Timeline -->
+        <main class="w-full lg:w-1/2 bg-gray-900 p-6 lg:p-8 overflow-y-auto scrollbar-hide" style="max-height: 100vh;">
+            <h2 class="text-2xl font-bold text-white mb-6">Protocol Upgrade Timeline</h2>
+            <div id="timeline-container" class="relative border-l-2 border-gray-700 pl-8 space-y-12">
+                <!-- Placeholder Content -->
+                <div class="text-gray-500">Enter a protocol and click "Start Monitoring" to see the latest governance proposals.</div>
+            </div>
+        </main>
+
+        <!-- Right Panel: Execution Guidance -->
+        <aside id="right-panel" class="w-full lg:w-1/4 bg-gray-900/80 backdrop-blur-sm border-l border-gray-700/50 p-6 space-y-6 overflow-y-auto scrollbar-hide hidden">
+            <h2 id="guidance-title" class="text-xl font-bold text-white">Execution Guidance</h2>
+            
+            <div id="guidance-container" class="space-y-5">
+                <!-- All guidance cards will be rendered here by JavaScript -->
+            </div>
+        </aside>
+
+    </div>
+
+    <script>
+        // --- CONFIGURATION ---
+        const API_BASE_URL = '/api/v1'; 
+
+        // --- DOM ELEMENT SELECTORS ---
+        const monitorButton = document.getElementById('monitor-button');
+        const buttonText = document.getElementById('button-text');
+        const loader = document.getElementById('loader');
+        const errorMessage = document.getElementById('error-message');
+        const timelineContainer = document.getElementById('timeline-container');
+        const rightPanel = document.getElementById('right-panel');
+        const guidanceTitle = document.getElementById('guidance-title');
+        const guidanceContainer = document.getElementById('guidance-container');
+
+        let volatilityChart, liquidityChart;
+
+        // --- API HELPER FUNCTION ---
+        async function apiFetch(endpoint, options = {}) {
+            try {
+                const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+                }
+                return await response.json();
+            } catch (error) {
+                console.error(`API fetch error for ${endpoint}:`, error);
+                throw error;
+            }
+        }
+
+        // --- UI UPDATE FUNCTIONS ---
+        function setLoading(isLoading) {
+            if (isLoading) {
+                buttonText.classList.add('hidden');
+                loader.classList.remove('hidden');
+                monitorButton.disabled = true;
+                errorMessage.textContent = '';
+            } else {
+                buttonText.classList.remove('hidden');
+                loader.classList.add('hidden');
+                monitorButton.disabled = false;
+            }
+        }
+
+        function displayError(message) {
+            errorMessage.textContent = `Error: ${message}`;
+        }
+
+        function createTimelineItem(proposal, onSelect) {
+            const stateColor = proposal.state === 'closed' ? 'bg-gray-500' : 'bg-green-400';
+            const item = document.createElement('div');
+            item.className = 'relative cursor-pointer hover:scale-105 transition-transform';
+            item.innerHTML = `
+                <div class="absolute -left-[42px] top-1.5 h-4 w-4 rounded-full ${stateColor}"></div>
+                <div class="bg-gray-800/50 rounded-lg p-5">
+                    <p class="text-sm text-gray-400">State: ${proposal.state} | End: ${new Date(proposal.end * 1000).toLocaleDateString()}</p>
+                    <h3 class="text-lg font-semibold mt-1">${proposal.title}</h3>
+                </div>
+            `;
+            item.addEventListener('click', () => onSelect(proposal));
+            return item;
+        }
+        
+        function renderGuidance(risk, govPrediction, volatility, liquidity, recommendations) {
+            const riskScore = risk.final_risk_score;
+            let riskColorClass = 'text-green-400';
+            if (riskScore > 40) riskColorClass = 'text-yellow-400';
+            if (riskScore > 70) riskColorClass = 'text-red-500';
+
+            const govPredictionColorClass = govPrediction.prediction === 'Likely to Pass' ? 'text-green-400' : 'text-red-400';
+
+            guidanceContainer.innerHTML = `
+                <!-- Governance Outcome Prediction -->
+                <div class="bg-gray-800 rounded-lg p-4">
+                    <h3 class="font-semibold text-gray-300">Governance Outcome Prediction</h3>
+                    <div class="text-center mt-2">
+                        <p class="text-2xl font-bold ${govPredictionColorClass}">${govPrediction.prediction}</p>
+                        <p class="text-sm text-gray-400">${govPrediction.confidence_percent}% confidence</p>
+                    </div>
+                </div>
+
+                <!-- Upgrade Risk Score -->
+                <div class="bg-gray-800 rounded-lg p-4">
+                    <h3 class="font-semibold text-gray-300">Upgrade Risk Score</h3>
+                    <div class="relative flex justify-center items-center h-32">
+                        <svg class="w-full h-full" viewBox="0 0 36 36">
+                            <path class="text-gray-700" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="3"></path>
+                            <path class="${riskColorClass.replace('text-', 'stroke-')}" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831" fill="none" stroke="currentColor" stroke-width="3" stroke-dasharray="${riskScore}, 100" stroke-linecap="round"></path>
+                        </svg>
+                        <div class="absolute text-4xl font-bold ${riskColorClass}">${riskScore}</div>
+                    </div>
+                    <p class="text-center text-sm text-gray-400 mt-2">Multi-factor risk assessment.</p>
+                </div>
+
+                <!-- Volatility Impact -->
+                <div class="bg-gray-800 rounded-lg p-4">
+                    <h3 class="font-semibold text-gray-300">Expected Volatility Impact</h3>
+                    <div class="chart-container mt-2"><canvas id="volatilityChart"></canvas></div>
+                    <p class="text-center text-sm text-gray-400 mt-2">GARCH(1,1) model forecast.</p>
+                </div>
+
+                <!-- Liquidity Shift Prediction -->
+                <div class="bg-gray-800 rounded-lg p-4">
+                    <h3 class="font-semibold text-gray-300">Liquidity Shift Prediction</h3>
+                     <div class="chart-container mt-2"><canvas id="liquidityChart"></canvas></div>
+                    <p class="text-center text-sm text-gray-400 mt-2">ARIMA(5,1,0) model forecast.</p>
+                </div>
+
+                <!-- Execution Timing -->
+                <div class="bg-gray-800 rounded-lg p-4">
+                    <h3 class="font-semibold text-gray-300">Execution Timing</h3>
+                    <ul class="mt-2 space-y-2 list-disc list-inside text-sm">
+                        ${recommendations.execution_timing.map(rec => `<li>${rec}</li>`).join('')}
+                    </ul>
+                </div>
+
+                <!-- Portfolio Rebalancing -->
+                <div class="bg-gray-800 rounded-lg p-4">
+                    <h3 class="font-semibold text-gray-300">Portfolio Rebalancing</h3>
+                    <ul class="mt-2 space-y-2 list-disc list-inside text-sm">
+                        ${recommendations.portfolio_rebalancing.map(rec => `<li>${rec}</li>`).join('')}
+                    </ul>
+                </div>
+
+                <!-- Risk Mitigation -->
+                <div class="bg-gray-800 rounded-lg p-4">
+                    <h3 class="font-semibold text-gray-300">Risk Mitigation Strategies</h3>
+                    <ul class="mt-2 space-y-2 list-disc list-inside text-sm">
+                        ${recommendations.risk_mitigation.map(rec => `<li>${rec}</li>`).join('')}
+                    </ul>
+                </div>
+            `;
+            // Re-initialize charts after rendering the new canvas elements
+            initializeCharts(volatility, liquidity);
+        }
+        
+        function initializeCharts(volatilityData, liquidityData) {
+            const chartOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: { x: { display: false }, y: { grid: { color: 'rgba(255, 255, 255, 0.1)' }, ticks: { font: { size: 10 } } } },
+                plugins: { legend: { display: false } }
+            };
+
+            if (volatilityChart) volatilityChart.destroy();
+            const volCtx = document.getElementById('volatilityChart');
+            if (volCtx) {
+                volatilityChart = new Chart(volCtx, { type: 'line', data: { labels:[], datasets: [] }, options: chartOptions });
+                if (volatilityData) updateVolatilityChart(volatilityData);
+            }
+
+            if (liquidityChart) liquidityChart.destroy();
+            const liqCtx = document.getElementById('liquidityChart');
+            if (liqCtx) {
+                liquidityChart = new Chart(liqCtx, { type: 'line', data: { labels:[], datasets: [] }, options: chartOptions });
+                if (liquidityData) updateLiquidityChart(liquidityData);
+            }
+        }
+        
+        function updateVolatilityChart(data) {
+            const forecastData = data.forecast.forecasted_annualized_volatility_percent;
+            const labels = Object.keys(forecastData);
+            const values = Object.values(forecastData);
+            volatilityChart.data.labels = labels;
+            volatilityChart.data.datasets = [{ label: 'Forecasted Volatility', data: values, borderColor: 'rgb(239, 68, 68)', tension: 0.4 }];
+            volatilityChart.update();
+        }
+
+        function updateLiquidityChart(data) {
+            const forecastData = data.forecast.forecasted_tvl_usd;
+            const labels = Object.keys(forecastData);
+            const values = Object.values(forecastData);
+            const lowerBounds = Object.values(data.forecast.confidence_interval_lower);
+            const upperBounds = Object.values(data.forecast.confidence_interval_upper);
+            liquidityChart.data.labels = labels;
+            liquidityChart.data.datasets = [
+                { label: 'Forecasted TVL', data: values, borderColor: 'rgb(59, 130, 246)', tension: 0.4 },
+                { label: 'Confidence Interval', data: upperBounds, fill: '+1', borderColor: 'rgba(59, 130, 246, 0.2)', backgroundColor: 'rgba(59, 130, 246, 0.2)', pointRadius: 0 },
+                { label: 'Lower Bound', data: lowerBounds, borderColor: 'rgba(59, 130, 246, 0.2)', pointRadius: 0 }
+            ];
+            liquidityChart.update();
+        }
+
+        // --- EVENT HANDLERS ---
+        async function handleMonitorClick() {
+            setLoading(true);
+            rightPanel.classList.add('hidden');
+            const spaceId = document.getElementById('governance-space').value;
+
+            try {
+                const proposals = await apiFetch(`/proposals/${spaceId}`);
+                
+                timelineContainer.innerHTML = ''; 
+                if (proposals.length === 0) {
+                    timelineContainer.textContent = 'No recent closed proposals found for this space.';
+                } else {
+                    proposals.forEach(p => timelineContainer.appendChild(createTimelineItem(p, handleProposalSelect)));
+                    handleProposalSelect(proposals[0]);
+                }
+            } catch (error) {
+                displayError(error.message);
+                timelineContainer.innerHTML = '<div class="text-red-400">Could not fetch proposals. Check the Snapshot Space ID and try again.</div>';
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        async function handleProposalSelect(proposal) {
+            console.log("Selected proposal:", proposal.title);
+            rightPanel.classList.remove('hidden');
+            guidanceTitle.textContent = `Guidance for: ${proposal.title.substring(0, 30)}...`;
+            guidanceContainer.innerHTML = '<div class="flex justify-center items-center h-full"><div class="loader h-8 w-8 rounded-full border-4 border-t-4 border-gray-200"></div></div>'; // Show loader
+
+            const tokenId = document.getElementById('token-id').value;
+            const protocolSlug = document.getElementById('protocol-slug').value;
+
+            try {
+                const [volatility, liquidity, govPrediction] = await Promise.all([
+                    apiFetch(`/forecast/volatility/${tokenId}`),
+                    apiFetch(`/forecast/liquidity/${protocolSlug}`),
+                    apiFetch('/predict/governance-outcome', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ title: proposal.title, body: proposal.body || '' })
+                    })
+                ]);
+
+                // --- THIS IS THE FIX ---
+                // The URL now correctly points to the multi-factor risk endpoint.
+                const risk = await apiFetch('/assess-risk/multi-factor', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        proposal_title: proposal.title,
+                        proposal_body: proposal.body || '',
+                        volatility_forecast: volatility,
+                        liquidity_forecast: liquidity,
+                        governance_prediction: govPrediction
+                    })
+                });
+
+                const recommendations = await apiFetch('/generate-recommendations', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        risk_score: risk.final_risk_score,
+                        volatility_forecast: volatility,
+                        liquidity_forecast: liquidity,
+                        governance_prediction: govPrediction
+                    })
+                });
+
+                renderGuidance(risk, govPrediction, volatility, liquidity, recommendations);
+
+            } catch (error) {
+                displayError(`Failed to load guidance data: ${error.message}`);
+                guidanceContainer.innerHTML = `<div class="text-red-400 p-4">Failed to load guidance data.</div>`;
+            }
+        }
+
+        // --- INITIALIZATION ---
+        document.addEventListener('DOMContentLoaded', () => {
+            monitorButton.addEventListener('click', handleMonitorClick);
+            initializeCharts();
+        });
+    </script>
+</body>
+</html>

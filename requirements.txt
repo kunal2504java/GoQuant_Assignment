@@ -7,3 +7,4 @@ arch
 statsmodels
 transformers
 torch
+scikit-learn

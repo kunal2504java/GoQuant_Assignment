@@ -2,29 +2,36 @@
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
-# --- FIX IS HERE ---
-# Instead of importing the whole module, we import the specific function we need.
-# This is a more direct and reliable way to handle imports across different folders.
-from services.risk_assessment import calculate_risk_score
+from services.risk_assessment import calculate_multi_factor_risk
+from typing import Dict, Any
 
-# Create a new router for risk-assessment endpoints.
 router = APIRouter()
 
-# Define the structure of the data we expect to receive in the POST request.
-# Pydantic handles all the validation for us.
-class ProposalData(BaseModel):
-    title: str = Field(..., example="[TEMP CHECK] - Uniswap V4 Upgrade")
-    body: str = Field(..., example="This proposal outlines the plan to upgrade...")
+# Define a more complex data structure for the request body.
+# It now expects the full output from our other model endpoints.
+class MultiFactorRiskRequest(BaseModel):
+    proposal_title: str
+    proposal_body: str
+    volatility_forecast: Dict[str, Any]
+    liquidity_forecast: Dict[str, Any]
+    governance_prediction: Dict[str, Any]
 
-@router.post("/assess-proposal", tags=["Risk Assessment"])
-def assess_proposal_risk(proposal: ProposalData):
+@router.post("/assess-risk/multi-factor", tags=["Risk Assessment"])
+def assess_multi_factor_risk(request: MultiFactorRiskRequest):
     """
-    Accepts proposal data (title and body) and returns a calculated risk score.
+    Accepts proposal data and model forecasts to calculate a multi-factor risk score.
     """
     try:
-        # Call the imported function directly.
-        score = calculate_risk_score(proposal.title, proposal.body)
-        return {"proposal_title": proposal.title, "risk_score": score}
+        # Pass all the data from the request to our upgraded service function.
+        score_data = calculate_multi_factor_risk(
+            proposal_title=request.proposal_title,
+            proposal_body=request.proposal_body,
+            volatility_forecast=request.volatility_forecast,
+            liquidity_forecast=request.liquidity_forecast,
+            governance_prediction=request.governance_prediction
+        )
+        return score_data
     except Exception as e:
-        # A general error handler for any unexpected issues in the service.
+        # Add more detailed error logging for debugging.
+        print(f"ERROR in multi-factor risk assessment: {e}")
         raise HTTPException(status_code=500, detail=f"An internal error occurred: {str(e)}")
