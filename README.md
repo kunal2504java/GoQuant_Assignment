@@ -96,3 +96,25 @@ python run.py
 The application will be available at http://127.0.0.1:8000.
 
 The interactive API documentation (powered by Swagger UI) is available at http://127.0.0.1:8000/docs.
+
+
+High-Level Architecture Diagram
+
+
++----------------+      HTTP Requests      +---------------------+      Function Calls      +---------------------+
+|                |  (e.g., /api/v1/...)   |                     |-------------------------->|                     |
+|    Frontend    |------------------------>|      API Layer      |      (FastAPI)      |                          |   Data Source Layer   |
+| (index.html)   |<------------------------|   (api/endpoints)   |<--------------------------| (data_sources/)     |
+|                |      JSON Responses    |                     |     Raw Data       |                          |
++----------------+                         +---------+-----------+                          +----------+----------+
+                                                     |                                                   |
+                                                     | Function Calls                                    | External APIs
+                                                     | (e.g., analyze_sentiment)                         | (CoinGecko,
+                                                     v                                                   |  Snapshot, etc.)
+                                             +-------+-------+      Function Calls      +----------+----------+<--+
+                                             |               |-------------------------->|                     |
+                                             | Service Layer |                          |   Modeling Layer    |
+                                             |  (services/)  |<--------------------------|      (models/)      |
+                                             |               |      Model Outputs     |                     |
+                                             +---------------+                          +---------------------+
+
