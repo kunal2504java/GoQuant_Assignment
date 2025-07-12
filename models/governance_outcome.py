@@ -3,12 +3,9 @@
 import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
-from typing import Dict, Any
+from typing import Dict, Any, List
 
 # --- Mock Training Data ---
-# In a real-world scenario, this would be a large dataset of thousands of past proposals.
-# Here, we simulate a small dataset to train our model.
-# Each proposal has text and a label (1 for 'Passed', 0 for 'Failed').
 TRAINING_DATA = [
     {"text": "AIP-1: Treasury diversification into stablecoins", "passed": 1},
     {"text": "Proposal to increase protocol fees by 5%", "passed": 1},
@@ -22,68 +19,72 @@ TRAINING_DATA = [
 ]
 
 # --- Model and Vectorizer Initialization ---
-# We create global variables for our model and vectorizer.
-# This ensures they are trained only once when the application starts.
 vectorizer = TfidfVectorizer(stop_words='english', max_features=100)
 model = LogisticRegression()
+# Global variable to store feature importances after training
+feature_importances: List[Dict[str, Any]] = []
 
 def train_model():
     """
-    Trains the Logistic Regression model on our mock data.
+    Trains the Logistic Regression model and calculates feature importances.
     """
+    global feature_importances
     print("\n--- Training Governance Outcome Prediction Model... ---")
     try:
-        # Separate the text data and the labels (passed/failed).
         texts = [d['text'] for d in TRAINING_DATA]
         labels = np.array([d['passed'] for d in TRAINING_DATA])
-
-        # Convert the text data into numerical features using TF-IDF.
-        # TF-IDF measures how important a word is to a document in a collection.
         X_features = vectorizer.fit_transform(texts)
-
-        # Train (fit) the logistic regression model on the features and labels.
         model.fit(X_features, labels)
+        
+        # --- NEW: Calculate and store feature importances ---
+        # Get the feature names (words) from the vectorizer.
+        feature_names = vectorizer.get_feature_names_out()
+        # Get the coefficients from the trained model.
+        # The magnitude of the coefficient indicates the word's importance.
+        coefficients = model.coef_[0]
+        
+        # Combine them and sort by the absolute value of the coefficient.
+        importance_list = sorted(
+            zip(feature_names, coefficients), 
+            key=lambda item: abs(item[1]), 
+            reverse=True
+        )
+        
+        # Store the top 10 most important features.
+        feature_importances = [
+            {"feature": name, "importance": round(coef, 4), "direction": "Pass" if coef > 0 else "Fail"}
+            for name, coef in importance_list[:10]
+        ]
+        
         print("--- Governance Outcome Model Trained Successfully. ---")
+        print(f"--- Top Features Identified: {[f['feature'] for f in feature_importances]} ---")
+
     except Exception as e:
         print(f"--- CRITICAL ERROR: Failed to train governance model: {e} ---")
-        # In a real app, you might want to handle this more gracefully.
         raise
 
 # Train the model when the module is first loaded.
 train_model()
 
-
 def predict_outcome(title: str, body: str) -> Dict[str, Any]:
     """
     Predicts the outcome of a new governance proposal.
-
-    Args:
-        title: The title of the proposal.
-        body: The body content of the proposal.
-
-    Returns:
-        A dictionary containing the prediction and the confidence probability.
     """
     print(f"\n--- Predicting outcome for proposal: '{title}' ---")
-    
-    # Combine title and body for a complete analysis.
     full_text = title + " " + (body or "")
-    
-    # Transform the new text using the *already fitted* vectorizer.
     X_new = vectorizer.transform([full_text])
-    
-    # Predict the outcome (0 or 1).
     prediction_result = model.predict(X_new)[0]
-    
-    # Predict the probability of each outcome ([prob_of_0, prob_of_1]).
     prediction_proba = model.predict_proba(X_new)[0]
-
     prediction_label = "Likely to Pass" if prediction_result == 1 else "Likely to Fail"
-    confidence = prediction_proba[prediction_result] * 100 # Get the probability of the predicted class
-
+    confidence = prediction_proba[prediction_result] * 100
     print(f"Prediction: {prediction_label} with {confidence:.2f}% confidence.")
-
     return {
         "prediction": prediction_label,
         "confidence_percent": round(confidence, 2)
     }
+
+def get_feature_importances() -> List[Dict[str, Any]]:
+    """
+    Returns the most important features identified during model training.
+    """
+    return feature_importances

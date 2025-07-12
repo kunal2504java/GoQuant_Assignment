@@ -5,13 +5,12 @@ from typing import List, Dict, Any
 
 API_URL = "https://api.llama.fi/protocol/{slug}"
 
-# --- This function for current TVL remains unchanged ---
 def get_protocol_tvl(protocol_slug: str) -> float:
-    # ... (existing function code)
     print(f"Fetching TVL for protocol slug: '{protocol_slug}'...")
     formatted_url = API_URL.format(slug=protocol_slug)
     try:
-        response = requests.get(formatted_url, timeout=10)
+        # Increased timeout from 10 to 20 seconds.
+        response = requests.get(formatted_url, timeout=20)
         response.raise_for_status()
         data = response.json()
         if not isinstance(data, dict):
@@ -35,42 +34,25 @@ def get_protocol_tvl(protocol_slug: str) -> float:
             raise TypeError(f"TVL data for '{protocol_slug}' has an unexpected type: {type(tvl_data)}")
         if not isinstance(current_tvl, (int, float)):
             raise TypeError(f"Final parsed TVL for '{protocol_slug}' was not a number.")
-        print(f"Successfully parsed TVL for '{protocol_slug}': {current_tvl}")
         return float(current_tvl)
-    except requests.exceptions.HTTPError as e:
-        if e.response.status_code == 404:
-            raise ValueError(f"Protocol with slug '{protocol_slug}' not found on DeFi Llama.")
-        raise
-    except (KeyError, TypeError, ValueError) as e:
-        raise ValueError(f"Could not parse TVL for '{protocol_slug}'. Reason: {e}") from e
+    except requests.exceptions.RequestException as e:
+        print(f"ERROR calling DeFi Llama API: {e}")
+        raise ValueError(f"Could not fetch current TVL for '{protocol_slug}'. Reason: {e}") from e
 
 
-# --- NEW FUNCTION FOR HISTORICAL TVL ---
 def get_historical_tvl(protocol_slug: str) -> List[Dict[str, Any]]:
-    """
-    Fetches the full historical TVL for a given protocol from DeFi Llama.
-    """
     print(f"\n--- Fetching historical TVL for protocol slug: '{protocol_slug}' ---")
     formatted_url = API_URL.format(slug=protocol_slug)
-
     try:
-        response = requests.get(formatted_url, timeout=10)
+        # Increased timeout from 10 to 20 seconds.
+        response = requests.get(formatted_url, timeout=20)
         response.raise_for_status()
         data = response.json()
-
         tvl_data = data.get('tvl')
-        if not isinstance(tvl_data, list):
-            raise ValueError(f"Historical TVL data for '{protocol_slug}' is not in the expected list format.")
-        
-        if not tvl_data:
-            raise ValueError(f"Historical TVL data for '{protocol_slug}' is an empty list.")
-            
+        if not isinstance(tvl_data, list) or not tvl_data:
+            raise ValueError(f"Historical TVL data for '{protocol_slug}' is not a valid, non-empty list.")
         print(f"--- Successfully fetched {len(tvl_data)} historical TVL data points ---")
         return tvl_data
-
-    except requests.exceptions.HTTPError as e:
-        if e.response.status_code == 404:
-            raise ValueError(f"Protocol with slug '{protocol_slug}' not found on DeFi Llama.")
-        raise
-    except (ValueError, KeyError) as e:
-        raise ValueError(f"Could not parse historical TVL for '{protocol_slug}'. Reason: {e}") from e
+    except requests.exceptions.RequestException as e:
+        print(f"ERROR calling DeFi Llama Historical API: {e}")
+        raise ValueError(f"Could not fetch historical TVL for '{protocol_slug}'. Reason: {e}") from e

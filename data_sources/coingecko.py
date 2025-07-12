@@ -26,30 +26,25 @@ def get_price(token_id: str, currency: str = "usd") -> float:
         raise ValueError(f"Could not parse price for '{token_id}'.") from e
 
 
-# --- NEW FUNCTION FOR HISTORICAL DATA ---
+# --- FUNCTION FOR HISTORICAL DATA ---
 HISTORICAL_API_URL = "https://api.coingecko.com/api/v3/coins/{}/market_chart?vs_currency={}&days={}&interval=daily"
 
 def get_historical_prices(token_id: str, days: int = 90, currency: str = "usd") -> List[Dict[str, Any]]:
     """
     Fetches historical daily prices for a given token from CoinGecko.
-
-    Args:
-        token_id: The ID of the token on CoinGecko (e.g., 'ethereum').
-        days: The number of past days of data to fetch.
-        currency: The currency for the price data.
-
-    Returns:
-        A list of price data points.
     """
     print(f"\n--- Fetching historical prices for '{token_id}' for the last {days} days ---")
-    formatted_url = HISTORICAL_API_URL.format(token_id, currency, days)
+    
+    # --- THIS IS THE FIX ---
+    # We explicitly convert the 'days' integer to a string before formatting.
+    # This prevents the "'int' object has no attribute 'strip'" error.
+    formatted_url = HISTORICAL_API_URL.format(token_id, currency, str(days))
     
     try:
         response = requests.get(formatted_url, timeout=10)
         response.raise_for_status()
         data = response.json()
 
-        # The historical prices are in the 'prices' key.
         prices = data.get('prices')
         if not prices:
             raise ValueError(f"Historical price data not found for '{token_id}'.")

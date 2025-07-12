@@ -19,11 +19,14 @@ def get_volatility_forecast(
     Forecasts future price volatility for a given token using a GARCH(1,1) model.
     """
     try:
-        # Step 1: Fetch historical data from our data source.
         historical_data = coingecko.get_historical_prices(token_id, days)
-        
-        # Step 2: Pass the data to our GARCH model service.
-        forecast_results = garch_volatility.forecast_volatility(historical_data, horizon)
+        # The 'proposal_body' is passed as an empty string because this endpoint doesn't use it.
+        # The 'horizon' is explicitly passed to the 'forecast_horizon' parameter.
+        forecast_results = garch_volatility.forecast_volatility(
+            price_data=historical_data, 
+            proposal_body="",  # Pass empty string for proposal_body
+            forecast_horizon=horizon
+        )
         
         return {
             "token_id": token_id,

@@ -336,7 +336,6 @@
 
             try {
                 const proposals = await apiFetch(`/proposals/${spaceId}`);
-                
                 timelineContainer.innerHTML = ''; 
                 if (proposals.length === 0) {
                     timelineContainer.textContent = 'No recent closed proposals found for this space.';
@@ -362,6 +361,8 @@
             const protocolSlug = document.getElementById('protocol-slug').value;
 
             try {
+                // --- THIS IS THE FIX ---
+                // The volatility API call is now a simple GET request again.
                 const [volatility, liquidity, govPrediction] = await Promise.all([
                     apiFetch(`/forecast/volatility/${tokenId}`),
                     apiFetch(`/forecast/liquidity/${protocolSlug}`),
@@ -372,8 +373,6 @@
                     })
                 ]);
 
-                // --- THIS IS THE FIX ---
-                // The URL now correctly points to the multi-factor risk endpoint.
                 const risk = await apiFetch('/assess-risk/multi-factor', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
