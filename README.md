@@ -1,98 +1,98 @@
-Protocol Upgrade Monitor: System Architecture
-1. Overview
-The Protocol Upgrade Monitor is a full-stack application designed to provide real-time risk assessment and predictive analytics for blockchain protocol upgrades. The system is built on a modular, service-oriented architecture using Python for the backend and a dynamic HTML/JavaScript interface for the frontend.
+Protocol Upgrade Monitor
+A high-performance, full-stack monitoring system that tracks blockchain protocol upgrades, predicts market shifts using machine learning, and provides actionable trading guidance.
 
-The core design philosophy is the separation of concerns, where different parts of the application have distinct and independent responsibilities:
+Features
+Dynamic Three-Panel UI: A responsive user interface for monitoring inputs, viewing the upgrade timeline, and receiving analytical guidance.
 
-Frontend: Handles user interaction and data presentation.
+Multi-Source Data Integration: Connects to live data from Etherscan, Snapshot, Twitter/X, CoinGecko, and DeFi Llama.
 
-API Layer: Serves as the central gateway between the frontend and the backend logic.
+Predictive Modeling Suite:
 
-Data Source Layer: Manages all communication with external, third-party APIs.
+Volatility Forecasting: A GARCH(1,1) model forecasts future price volatility.
 
-Modeling Layer: Contains all the predictive models (GARCH, ARIMA, NLP, etc.).
+Liquidity Prediction: An ARIMA time-series model predicts future TVL movements.
 
-Service Layer: Contains the business logic that orchestrates the data and models to produce intelligent outputs.
+Sentiment Analysis: A DistilBERT transformer model provides real-time sentiment scoring of social media data.
 
-2. Project Structure
-The project is organized into a series of directories, each with a specific purpose:
+Governance Outcome Prediction: A Logistic Regression model classifies the likely success or failure of governance proposals.
 
-/frontend/: Contains the index.html file, which is the complete user interface. It is responsible for rendering the dashboard and making API calls to the backend.
+Multi-factor Risk Assessment: A sophisticated risk model that synthesizes technical, market, liquidity, and governance factors into a single, weighted risk score.
 
-/api/: This is the heart of the backend.
+Actionable Recommendations: A rule-based engine generates guidance for execution timing, portfolio rebalancing, and risk mitigation strategies.
 
-main.py: The main application file that initializes the FastAPI server, includes all the API routers, and serves the frontend.
+RESTful Backend API: A clean, high-performance API built with Python and FastAPI to serve data and model outputs.
 
-endpoints/: This sub-directory contains individual files that define the API routes, grouped by functionality (e.g., market_data.py, governance.py, risk.py). This keeps the API organized and easy to maintain.
+Tech Stack
+Backend: Python, FastAPI
 
-/data_sources/: This layer acts as an abstraction for all external data providers. Each file in this directory is responsible for connecting to a specific external API (e.g., coingecko.py, defillama.py, snapshot.py), fetching the raw data, and handling any errors.
+Frontend: HTML, Tailwind CSS, JavaScript
 
-/models/: This directory contains the implementations of all the advanced predictive models. Each file represents a specific model (e.g., garch_volatility.py, arima_liquidity.py, sentiment_analysis.py), making them reusable and easy to test independently.
+Data Science & ML: Pandas, NumPy, Scikit-learn, Statsmodels (for ARIMA), Arch (for GARCH), Transformers & PyTorch (for NLP).
 
-/services/: This layer contains the core business logic of the application. It orchestrates the flow of data from the data_sources layer, processes it through the models layer, and produces the final analytical outputs (e.g., risk_assessment.py, recommendation_service.py).
+API Interaction: Requests
 
-run.py: A simple launcher script in the root directory, providing a single, reliable entry point for starting the web server.
+Architecture
+The project follows a clean, modular architecture to ensure maintainability and separation of concerns:
 
-3. Data and Logic Flow
-The application follows a clear, request-response data flow, initiated by the user.
+/frontend/: Contains the index.html file for the user interface.
 
-Step 1: User Interaction
+/api/: The FastAPI backend, containing the main application (main.py) and endpoint definitions.
 
-The user opens the application at http://127.0.0.1:8000.
+/data_sources/: Modules for connecting to external APIs (CoinGecko, DeFi Llama, Snapshot, etc.).
 
-The FastAPI backend serves the frontend/index.html file.
+/models/: Implementations of the predictive models (GARCH, ARIMA, NLP, etc.).
 
-The user clicks the "Start Monitoring" button.
+/services/: The core business logic that orchestrates data and models to produce intelligent outputs (e.g., the multi-factor risk score).
 
-Step 2: Fetching Governance Proposals
+Setup and Installation
+Follow these steps to run the project locally.
 
-The frontend's JavaScript makes an API call to the backend endpoint: /api/v1/proposals/{space_id}.
+1. Clone the Repository
+git clone 
 
-The governance.py endpoint receives the request and calls the get_proposals() function in the data_sources/snapshot.py module.
+2. Set Up a Virtual Environment
+It is highly recommended to use a Python virtual environment.
 
-The snapshot.py module sends a GraphQL query to the live Snapshot API.
+# Create the environment
+python -m venv venv
 
-The list of proposals is returned to the frontend and displayed in the center panel.
+# Activate the environment
+# On Windows:
+.\venv\Scripts\activate
+# On macOS/Linux:
+source venv/bin/activate
 
-Step 3: Comprehensive Analysis
+3. Install Dependencies
+Install all the required Python libraries from the requirements.txt file.
 
-The user clicks on a specific proposal in the timeline.
+pip install -r requirements.txt
 
-The frontend's JavaScript triggers a series of parallel API calls to the backend for a full analysis:
+(Note: The first time you run this, the NLP models from Hugging Face will also be downloaded, which may take a few minutes).
 
-/api/v1/forecast/volatility/{token_id}
+4. Set Environment Variables
+This application requires API credentials, which should be set as environment variables for security.
 
-/api/v1/forecast/liquidity/{protocol_slug}
+Etherscan API Key: Get a free API key from etherscan.io/apis.
 
-/api/v1/predict/governance-outcome (with proposal text)
+Twitter/X Bearer Token: Get this from your X Developer account.
 
-Each of these endpoints calls its respective data source and model (e.g., coingecko.py -> garch_volatility.py).
+In your terminal, set the variables before running the server.
 
-Step 4: Multi-Factor Risk & Recommendations
+On Windows (PowerShell):
 
-Once the initial analyses are complete, the frontend makes two final API calls, passing the results from the previous step:
+$env:ETHERSCAN_API_KEY="YOUR_ETHERSCAN_KEY_HERE"
+$env:TWITTER_BEARER_TOKEN="YOUR_TWITTER_BEARER_TOKEN_HERE"
 
-/api/v1/risk/assess-risk/multi-factor: This endpoint calls the risk_assessment.py service, which uses the volatility, liquidity, and governance predictions to calculate the final, weighted risk score.
+On macOS/Linux:
 
-/api/v1/generate-recommendations: This endpoint calls the recommendation_service.py, which uses the final risk score and model outputs to generate rule-based trading guidance.
+export ETHERSCAN_API_KEY="YOUR_ETHERSCAN_KEY_HERE"
+export TWITTER_BEARER_TOKEN="YOUR_TWITTER_BEARER_TOKEN_HERE"
 
-Step 5: Displaying Results
+5. Run the Application
+From the project's root directory, use the launcher script to start the server.
 
-The frontend receives the final risk score and recommendations.
+python run.py
 
-The JavaScript dynamically updates the right-hand "Execution Guidance" panel, rendering the charts and recommendation lists for the user.
+The application will be available at http://127.0.0.1:8000.
 
-4. API Endpoints
-The backend exposes a RESTful API with a clear structure, prefixed by /api/v1/. The main categories of endpoints are:
-
-Market Data: For fetching current and historical prices and TVL.
-
-Governance: For fetching governance proposals.
-
-Predictive Models: Endpoints for each model (volatility, liquidity, governance outcome).
-
-Risk Assessment: For calculating the multi-factor risk score.
-
-Execution Guidance: For generating actionable recommendations.
-
-Blockchain Data: For fetching on-chain transaction data.
+The interactive API documentation (powered by Swagger UI) is available at http://127.0.0.1:8000/docs.
